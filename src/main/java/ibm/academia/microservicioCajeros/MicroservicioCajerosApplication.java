@@ -1,6 +1,7 @@
 package ibm.academia.microservicioCajeros;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -43,8 +44,17 @@ public class MicroservicioCajerosApplication {
 
     private ArrayList<String> encuentraCajeros(JsonObject obj, Localizacion localizacion){
 		ArrayList<String> list = new ArrayList<String>();
-        obj.getAsJsonArray().forEach(element -> element.
+        obj.getAsJsonArray().forEach(element -> 
+		Iterator itr = element.getAsJsonArray().iterator();
+		while(itr.hasNext()){
+			String s = (String)itr.next();
+			if(s == localizacion.getDelegacion()){
+				list.add(element);
+			}
+		}
+		return null;
 		);
+		return list;
 
     }
 
