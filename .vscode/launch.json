@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-MicroservicioCajerosApplication<microservicioCajeros>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "mainClass": "ibm.academia.microservicioCajeros.MicroservicioCajerosApplication",
+            "projectName": "microservicioCajeros",
+            "args": ""
+        }
+    ]
+}
