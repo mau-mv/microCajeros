@@ -1,10 +1,13 @@
 package ibm.academia.microservicioCajeros;
 
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -24,38 +27,43 @@ public class MicroservicioCajerosApplication {
 	}
 
 	@GetMapping
-	public String requestData(@RequestBody Localizacion localizacion){
+	public List<JsonNode> requestData(@RequestBody Localizacion localizacion){
 		String url  = "https://www.banamex.com/localizador/jsonP/json5.json";
 
 		RestTemplate restTemplate =  new RestTemplate();
 		String result = restTemplate.getForObject(url, String.class);
 
-		String resultJson = result.substring(13,result.length()-2);
+		String json_str = result.substring(13,result.length()-2);
 
-		JsonObject obj = new JsonParser().parse(resultJson).getAsJsonObject();
+		ObjectMapper mapper = new ObjectMapper();
+        try {
+            JsonNode atmJsonNode = mapper.readTree(json_str).get("Servicios").get("300").get("0");
+			JsonNode sucursalesJsonNode = mapper.readTree(json_str).get("Servicios").get("400").get("0");
+			
+            List<JsonNode> sucursalesAtms =  new ArrayList<JsonNode>();
+			atmJsonNode.forEach(x -> sucursalesAtms.add(x));
+			sucursalesJsonNode.forEach(x -> sucursalesAtms.add(x));
 
-        JsonObject sucursales  = obj.get("Servicios").getAsJsonObject().get("100").getAsJsonObject().get("0").getAsJsonObject();
-        JsonObject cajeros  = obj.get("Servicios").getAsJsonObject().get("300").getAsJsonObject().get("0").getAsJsonObject();
+			List<JsonNode> resultJsonNodes =  new ArrayList<JsonNode>();
 
-    
+			for (final JsonNode objNode : sucursalesAtms) {
+				Pattern p = Pattern.compile("(?<=C.P.(\s)?)\\d+");
+				Matcher m = p.matcher(objNode.get(4).asText());
 
-		return cajeros.toString() ;
-    }
-
-    private ArrayList<String> encuentraCajeros(JsonObject obj, Localizacion localizacion){
-		ArrayList<String> list = new ArrayList<String>();
-        obj.getAsJsonArray().forEach(element -> 
-		Iterator itr = element.getAsJsonArray().iterator();
-		while(itr.hasNext()){
-			String s = (String)itr.next();
-			if(s == localizacion.getDelegacion()){
-				list.add(element);
+				if (m.find()) {
+					if (localizacion.getCp().equalsIgnoreCase(m.group(0)) ||  localizacion.getDelegacion().equalsIgnoreCase(objNode.get(17).asText() )) {
+						resultJsonNodes.add(objNode);
+					}
+				}
 			}
-		}
-		return null;
-		);
-		return list;
 
+			return resultJsonNodes;
+
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
+		return new ArrayList<JsonNode>();
     }
 
 }
